@@ -6,11 +6,16 @@ export class WidgetCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    // 1. Create VPC
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'WidgetCdkQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    // 2. Create EC2
+
+    // 3. Set up EC2
+
+    // 4. Create S3
+
+    // 5. Create Load balancer
+
+    // 6. Create Lambda
   }
 }
