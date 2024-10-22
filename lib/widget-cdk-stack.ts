@@ -16,6 +16,6 @@ export class WidgetCdkStack extends cdk.Stack {
 
     // 5. Create Load balancer
 
-    // 6. Create Lambda
+    // 6. Create Lambda (Optional)
   }
 }
