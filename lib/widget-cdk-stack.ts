@@ -12,10 +12,8 @@ export class WidgetCdkStack extends cdk.Stack {
 
     // 3. Set up EC2
 
-    // 4. Create S3
+    // 4. Create Load balancer
 
-    // 5. Create Load balancer
-
-    // 6. Create Lambda (Optional)
+    // 5. Create Lambda (Optional)
   }
 }
