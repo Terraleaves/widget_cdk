@@ -2,7 +2,7 @@
   "name": "widget_cdk",
   "version": "0.1.0",
   "bin": {
-    "widget_cdk": "bin/widget_cdk.js"
+    "widget_cdk": "bin/widget-cdk.js"
   },
   "scripts": {
     "build": "tsc",
