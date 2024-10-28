@@ -76,7 +76,9 @@ export class WidgetCdkStack extends cdk.Stack {
         ec2.InstanceClass.T2,
         ec2.InstanceSize.MICRO
       ),
-      machineImage: ec2.MachineImage.latestAmazonLinux2023()
+      machineImage: ec2.MachineImage.lookup({
+        name: "Widget Instance AMI"
+      })
     });
 
     // 2.1. Get public IP address
