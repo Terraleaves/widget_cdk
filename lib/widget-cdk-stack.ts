@@ -77,7 +77,7 @@ export class WidgetCdkStack extends cdk.Stack {
         ec2.InstanceSize.MICRO
       ),
       machineImage: ec2.MachineImage.lookup({
-        name: "Widget Instance AMI"
+        name: "widget-instance-ami"
       })
     });
 
