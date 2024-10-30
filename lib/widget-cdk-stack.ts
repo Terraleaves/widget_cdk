@@ -1,76 +1,97 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
+import * as cdk from "aws-cdk-lib";
+import { Construct } from "constructs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
-import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import * as iam from "aws-cdk-lib/aws-iam";
+import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
+import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
-require('dotenv').config();
+require("dotenv").config();
 
 const config = {
   env: {
-    account: process.env.AWS_ACCOUNT_NUMBER,
-    region: process.env.AWS_REGION
-  }
-}
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
+};
 
 export class WidgetCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, { ...props, env: config.env});
+    super(scope, id, { ...props, env: config.env });
 
-    // 1. Find default VPC for now
-    const defaultVPC = ec2.Vpc.fromLookup(
-      this,
-      'VPC',
-      { isDefault: true }
+    // Find default VPC for now
+    const defaultVPC = this.getDefaultVPC();
+
+    // Configure role
+    const role = this.createRole();
+
+    // Configure security group
+    const securityGroup = this.createSecurityGroup(defaultVPC);
+
+    // Add rule to security group
+    this.defineSGIngressRule(securityGroup);
+
+    const launchTemplate = this.createLaunchTemplate(role, securityGroup);
+
+    // Create auto scaling group
+    const autoScalingGroup = this.createAutoScallingGroup(
+      defaultVPC,
+      launchTemplate
     );
 
-    // 1.1. Configure role
-    const role = new iam.Role(
-      this,
-      'widget-instance-role',
-      { assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com')}
+    // Create Load Balancer
+    const loadBalancer = this.createApplicationLoadBalancer(
+      defaultVPC,
+      securityGroup
     );
 
-    // 1.2. Configure security group
-    const sg = new ec2.SecurityGroup(
-      this,
-      'widget-instance-sg',
-      {
-        vpc: defaultVPC,
-        allowAllOutbound: true,
-        securityGroupName: 'widget-instance-role'
-      }
-    );
+    // Add Listener to LB (for HTTP on Port 80)
+    const listener = this.createApplicationListener(loadBalancer);
 
-    // 1.3. Add rule to security group
-    // Allow SSH connection
-    // TODO: Currently, it allows all users to access vis ssh for testing. It's requird to change to restricted access
-    sg.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(22),
-      'Allows SSH access from Internet'
-    );
+    // Add Target Group to LB
+    this.defineTarget(listener, autoScalingGroup);
+  }
 
+  private getDefaultVPC(): cdk.aws_ec2.IVpc {
+    return ec2.Vpc.fromLookup(this, "VPC", { isDefault: true });
+  }
+
+  private createRole(): cdk.aws_iam.Role {
+    return new iam.Role(this, "widget-instance-role", {
+      assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
+    });
+  }
+
+  private createSecurityGroup(
+    vpc: cdk.aws_ec2.IVpc
+  ): cdk.aws_ec2.SecurityGroup {
+    return new ec2.SecurityGroup(this, "widget-instance-sg", {
+      vpc: vpc,
+      allowAllOutbound: true,
+      securityGroupName: "widget-instance-role",
+    });
+  }
+
+  private defineSGIngressRule(sg: cdk.aws_ec2.SecurityGroup): void {
     // Allow HTTP connection
     sg.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(80),
-      'Allows https access from Internet'
+      "Allows https access from Internet"
     );
 
     // Allows HTTPS connection
     sg.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(443),
-      'Allows https access from Internet'
-    )
+      "Allows https access from Internet"
+    );
+  }
 
-
-    // 2. Create EC2
-    // TODO: Need to create key pair. Currently, anyone can access to this instance
-    //Launch Template (for ASG instances)
-    const launchTemplate = new ec2.LaunchTemplate(this, 'simple-instance-1', {
+  private createLaunchTemplate(
+    role: cdk.aws_iam.Role,
+    sg: cdk.aws_ec2.SecurityGroup
+  ): cdk.aws_ec2.LaunchTemplate {
+    return new ec2.LaunchTemplate(this, "widget-instance", {
       role: role,
       securityGroup: sg,
       instanceType: ec2.InstanceType.of(
@@ -78,42 +99,53 @@ export class WidgetCdkStack extends cdk.Stack {
         ec2.InstanceSize.MICRO
       ),
       machineImage: ec2.MachineImage.lookup({
-        name: "widget-instance-ami"
-      })
+        name: "widget-instance-ami",
+      }),
     });
+  }
 
-    // 2.1. Get public IP address
-    // const publicIp = instance.instancePublicIp;
-
-    // create auto scaling group
-    const autoScalingGroup = new autoscaling.AutoScalingGroup(this, 'AutoScalingGroup', {
-      vpc: defaultVPC,
+  private createAutoScallingGroup(
+    vpc: cdk.aws_ec2.IVpc,
+    launchTemplate: cdk.aws_ec2.LaunchTemplate
+  ): cdk.aws_autoscaling.AutoScalingGroup {
+    return new autoscaling.AutoScalingGroup(this, "AutoScalingGroup", {
+      vpc: vpc,
       launchTemplate: launchTemplate,
       minCapacity: 1,
       desiredCapacity: 1,
       maxCapacity: 3,
     });
+  }
 
-
-    // Create Load Balancer
-    const loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LB', {
-      vpc: defaultVPC,
+  private createApplicationLoadBalancer(
+    vpc: cdk.aws_ec2.IVpc,
+    sg: cdk.aws_ec2.SecurityGroup
+  ): cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer {
+    return new elbv2.ApplicationLoadBalancer(this, "LB", {
+      vpc: vpc,
       internetFacing: true,
-      securityGroup: sg
+      securityGroup: sg,
     });
+  }
 
-    // Add Listener to LB (for HTTP on Port 80)
-    const listener = loadBalancer.addListener('Listener', {
+  private createApplicationListener(
+    lb: cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer
+  ): cdk.aws_elasticloadbalancingv2.ApplicationListener {
+    return lb.addListener("Listener", {
       port: 80,
       open: true,
     });
+  }
 
-    // Add Target Group to LB
-    listener.addTargets('Target', {
+  private defineTarget(
+    listener: cdk.aws_elasticloadbalancingv2.ApplicationListener,
+    asg: cdk.aws_autoscaling.AutoScalingGroup
+  ) {
+    listener.addTargets("Target", {
       port: 80,
-      targets: [autoScalingGroup],
+      targets: [asg],
       healthCheck: {
-        path: '/',
+        path: "/",
         interval: cdk.Duration.seconds(30),
       },
     });
