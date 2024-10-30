@@ -2,6 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
+import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 
 require('dotenv').config();
 
@@ -67,11 +69,10 @@ export class WidgetCdkStack extends cdk.Stack {
 
     // 2. Create EC2
     // TODO: Need to create key pair. Currently, anyone can access to this instance
-    const instance = new ec2.Instance(this, 'simple-instance-1', {
-      vpc: defaultVPC,
+    //Launch Template (for ASG instances)
+    const launchTemplate = new ec2.LaunchTemplate(this, 'simple-instance-1', {
       role: role,
       securityGroup: sg,
-      instanceName: 'widget-instance',
       instanceType: ec2.InstanceType.of(
         ec2.InstanceClass.T2,
         ec2.InstanceSize.MICRO
@@ -82,12 +83,39 @@ export class WidgetCdkStack extends cdk.Stack {
     });
 
     // 2.1. Get public IP address
-    const publicIp = instance.instancePublicIp;
+    // const publicIp = instance.instancePublicIp;
 
-    // 3. Set up EC2
+    // create auto scaling group
+    const autoScalingGroup = new autoscaling.AutoScalingGroup(this, 'AutoScalingGroup', {
+      vpc: defaultVPC,
+      launchTemplate: launchTemplate,
+      minCapacity: 1,
+      desiredCapacity: 1,
+      maxCapacity: 3,
+    });
 
-    // 4. Create Load balancer
 
-    // 5. Create Lambda (Optional)
+    // Create Load Balancer
+    const loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LB', {
+      vpc: defaultVPC,
+      internetFacing: true,
+      securityGroup: sg
+    });
+
+    // Add Listener to LB (for HTTP on Port 80)
+    const listener = loadBalancer.addListener('Listener', {
+      port: 80,
+      open: true,
+    });
+
+    // Add Target Group to LB
+    listener.addTargets('Target', {
+      port: 80,
+      targets: [autoScalingGroup],
+      healthCheck: {
+        path: '/',
+        interval: cdk.Duration.seconds(30),
+      },
+    });
   }
 }
