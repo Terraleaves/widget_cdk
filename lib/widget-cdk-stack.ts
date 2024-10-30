@@ -9,8 +9,8 @@ require("dotenv").config();
 
 const config = {
   env: {
-    account: process.env.AWS_ACCOUNT_NUMBER,
-    region: process.env.AWS_REGION,
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
   },
 };
 
