@@ -1,0 +1,22 @@
+import * as cdk from "aws-cdk-lib";
+import { WidgetCdkStack } from "../lib/widget-cdk-stack";
+import { IntegTest } from "@aws-cdk/integ-tests-alpha";
+
+
+const app = new cdk.App();
+
+const testStack = new WidgetCdkStack(app, "IntegrationTestStack", {
+    description: "Integration test stack"
+});
+
+const integ = new IntegTest(app, 'Resource creation', {
+    testCases: [testStack],
+    cdkCommandOptions: {
+        destroy: {
+            args: {
+                force: true
+            }
+        }
+    },
+    regions: [testStack.region]
+});

@@ -1,0 +1,22 @@
+{
+  "version": "38.0.1",
+  "testCases": {
+    "EC2 Access Test/DefaultTest": {
+      "stacks": [
+        "IntegrationTestStack"
+      ],
+      "regions": [
+        "ap-southeast-2"
+      ],
+      "cdkCommandOptions": {
+        "destroy": {
+          "args": {
+            "force": true
+          }
+        }
+      },
+      "assertionStack": "EC2 Access Test/DefaultTest/DeployAssert",
+      "assertionStackName": "EC2AccessTestDefaultTestDeployAssertF8F0D051"
+    }
+  }
+}
