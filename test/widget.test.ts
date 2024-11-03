@@ -2,11 +2,16 @@ import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import * as WidgetCdk from '../lib/widget-cdk-stack';
 
+require("dotenv").config();
+
 test('Template should create widget instance role', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack');
-    // THEN
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
+  });
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::IAM::Role", {
@@ -26,13 +31,16 @@ test('Template should create widget instance role', () => {
 
 test('Template Should create security group', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
+  });
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::EC2::SecurityGroup", {
-    GroupName: "widget-instance-role",
+    GroupName: "widget-instance-sg",
     SecurityGroupIngress: [
     {
       IpProtocol: "tcp",
@@ -51,24 +59,12 @@ test('Template Should create security group', () => {
 
 test('Template Should create EC2 launch templace', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
-  const template = Template.fromStack(stack);
-
-  template.hasResourceProperties("AWS::EC2::LaunchTemplate", {
-    LaunchTemplateData: {
-      InstanceType: "t2.micro",
-      ImageId: "ami-1234"
-    }
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
   });
-});
-
-test('Template Should create EC2 launch templace', () => {
-  const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::EC2::LaunchTemplate", {
@@ -81,9 +77,12 @@ test('Template Should create EC2 launch templace', () => {
 
 test('Template Should create EC2 auto scaling group', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
+  });
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::AutoScaling::AutoScalingGroup", {
@@ -100,9 +99,12 @@ test('Template Should create EC2 auto scaling group', () => {
 
 test('Template Should create EC2 application load balancer', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
+  });
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::ElasticLoadBalancingV2::LoadBalancer", {
@@ -113,9 +115,12 @@ test('Template Should create EC2 application load balancer', () => {
 
 test('Template Should create EC2 application load balancer listener', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
+  });
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::ElasticLoadBalancingV2::Listener", {
@@ -127,9 +132,12 @@ test('Template Should create EC2 application load balancer listener', () => {
 
 test('Template Should define EC2 application load balancer target group', () => {
   const app = new cdk.App();
-    // WHEN
-  const stack = new WidgetCdk.WidgetCdkStack(app, 'MyTestStack');
-    // THEN
+  const stack = new WidgetCdk.WidgetCdkStack(app, 'UnitTestStack', {
+    env: {
+          account: process.env.CDK_DEFAULT_ACCOUNT,
+          region: process.env.CDK_DEFAULT_REGION,
+        },
+  });
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties("AWS::ElasticLoadBalancingV2::TargetGroup", {
