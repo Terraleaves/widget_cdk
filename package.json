@@ -8,7 +8,10 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "integ-test": "npx integ-runner --directory ./test --parallel-regions ap-southeast-2 --update-on-failed --clean",
+    "integ-test-synth": "cdk synth --context vpc-provider:account=116981789059:filter.isDefault=true:region=ap-southeast-2:returnAsymmetricSubnets=true --context ami:account=116981789059:filters.image-type.0=machine:filters.name.0=widget-instance-ami:filters.state.0=available:region=ap-southeast-2"
+
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -20,6 +23,8 @@
     "typescript": "~5.6.2"
   },
   "dependencies": {
+    "@aws-cdk/integ-runner": "^2.164.1-alpha.0",
+    "@aws-cdk/integ-tests-alpha": "^2.164.1-alpha.0",
     "aws-cdk-lib": "2.164.1",
     "constructs": "^10.0.0",
     "dotenv": "^16.4.5",

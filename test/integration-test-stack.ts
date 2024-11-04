@@ -5,8 +5,6 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as autoscaling from "aws-cdk-lib/aws-autoscaling";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 
-require("dotenv").config();
-
 const config = {
   env: {
     account: "325861338157",
@@ -14,7 +12,7 @@ const config = {
   },
 };
 
-export class WidgetCdkStack extends cdk.Stack {
+export class IntegrationTestStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, { ...props, env: config.env });
 
@@ -44,11 +42,17 @@ export class WidgetCdkStack extends cdk.Stack {
       securityGroup
     );
 
+    new cdk.CfnOutput(this, "LoadBalancerDNS", {
+      value: loadBalancer.loadBalancerDnsName,
+      exportName: "test-lbDNS",
+    });
+
     // Add Listener to LB (for HTTP on Port 80)
     const listener = this.createApplicationListener(loadBalancer);
 
     // Add Target Group to LB
     this.defineTarget(listener, autoScalingGroup);
+
   }
 
   private getDefaultVPC(): cdk.aws_ec2.IVpc {
@@ -56,7 +60,7 @@ export class WidgetCdkStack extends cdk.Stack {
   }
 
   private createRole(): cdk.aws_iam.Role {
-    return new iam.Role(this, "widget-instance-role", {
+    return new iam.Role(this, "widget-instance-test-role", {
       assumedBy: new iam.ServicePrincipal("ec2.amazonaws.com"),
     });
   }
@@ -64,10 +68,10 @@ export class WidgetCdkStack extends cdk.Stack {
   private createSecurityGroup(
     vpc: cdk.aws_ec2.IVpc
   ): cdk.aws_ec2.SecurityGroup {
-    return new ec2.SecurityGroup(this, "widget-instance-sg", {
+    return new ec2.SecurityGroup(this, "widget-instance-test-sg", {
       vpc: vpc,
       allowAllOutbound: true,
-      securityGroupName: "widget-instance-role",
+      securityGroupName: "widget-instance-test-sg",
     });
   }
 
@@ -76,14 +80,14 @@ export class WidgetCdkStack extends cdk.Stack {
     sg.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(80),
-      "Allows https access from Internet"
+      "Allows http access from Internet for test"
     );
 
     // Allows HTTPS connection
     sg.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(443),
-      "Allows https access from Internet"
+      "Allows https access from Internet for test"
     );
   }
 
@@ -108,7 +112,7 @@ export class WidgetCdkStack extends cdk.Stack {
     vpc: cdk.aws_ec2.IVpc,
     launchTemplate: cdk.aws_ec2.LaunchTemplate
   ): cdk.aws_autoscaling.AutoScalingGroup {
-    return new autoscaling.AutoScalingGroup(this, "AutoScalingGroup", {
+    return new autoscaling.AutoScalingGroup(this, "AutoScalingGroup-test", {
       vpc: vpc,
       launchTemplate: launchTemplate,
       minCapacity: 1,
@@ -121,7 +125,7 @@ export class WidgetCdkStack extends cdk.Stack {
     vpc: cdk.aws_ec2.IVpc,
     sg: cdk.aws_ec2.SecurityGroup
   ): cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer {
-    return new elbv2.ApplicationLoadBalancer(this, "LB", {
+    return new elbv2.ApplicationLoadBalancer(this, "LB-test", {
       vpc: vpc,
       internetFacing: true,
       securityGroup: sg,
@@ -131,7 +135,7 @@ export class WidgetCdkStack extends cdk.Stack {
   private createApplicationListener(
     lb: cdk.aws_elasticloadbalancingv2.ApplicationLoadBalancer
   ): cdk.aws_elasticloadbalancingv2.ApplicationListener {
-    return lb.addListener("Listener", {
+    return lb.addListener("Listener-test", {
       port: 80,
       open: true,
     });
@@ -141,7 +145,7 @@ export class WidgetCdkStack extends cdk.Stack {
     listener: cdk.aws_elasticloadbalancingv2.ApplicationListener,
     asg: cdk.aws_autoscaling.AutoScalingGroup
   ) {
-    listener.addTargets("Target", {
+    listener.addTargets("Target-test", {
       port: 80,
       targets: [asg],
       healthCheck: {
